@@ -44,8 +44,6 @@ contract GPGWalletDeployer {
                     revert(0x1c, 0x04)
                 }
             }
-
-            mstore(0x40, add(add(ptr, 0x55), bytecodeLength))
         }
 
         emit GPGWalletDeployed(walletAddress);
@@ -56,15 +54,18 @@ contract GPGWalletDeployer {
     function predictAddress(bytes memory gpgPublicKey) external view returns (address walletAddress, bool isDeployed) {
         assembly {
             let ptr := mload(0x40)
+            let pubKeyLength := calldataload(0x24)
+            let bytecodeLength := add(add(0x37, 0x20), pubKeyLength) // 0x8c + 0x20 (length) + pubKeyLength - 0x55
 
             mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
             mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
-            mstore(add(ptr, 0x49), 0x3d60ad80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            mstore(add(ptr, 0x49), 0x80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            mstore8(add(ptr, 0x55), 0x3d)
+            mstore8(add(ptr, 0x56), 0x60)
+            mstore8(add(ptr, 0x57), bytecodeLength)
 
-            let pubKeyLength := calldataload(0x24)
             mstore(add(ptr, 0x8c), pubKeyLength)
             calldatacopy(add(add(ptr, 0x8c), 0x20), 0x44, pubKeyLength)
-            let bytecodeLength := add(add(0x37, 0x20), pubKeyLength) // 0x8c + 0x20 (length) + pubKeyLength - 0x55
 
             // Copy create2 computation data to memory
             mstore8(ptr, 0xff) // 0xFF
