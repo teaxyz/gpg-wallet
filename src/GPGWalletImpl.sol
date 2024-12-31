@@ -111,6 +111,9 @@ contract GPGWallet is EIP712 {
         return _executeCall(to, value, data);
     }
 
+    /// @notice Fallback function to receive ETH
+    receive() external payable {}
+
     ////////////////////////////////////
     //            INTERNAL            //
     ////////////////////////////////////
@@ -160,7 +163,7 @@ contract GPGWallet is EIP712 {
                 extcodecopy(address(), ptr, 0x2d, 0x20)
                 extcodecopy(address(), add(ptr, 0x20), add(0x2d, 0x20), mload(ptr))
 
-                // Update the free memory pointer
+                // Replace the free memory pointer
                 mstore(0x40, add(add(ptr, 0x20), mload(ptr)))
 
                 // Set result to point to our bytes array
