@@ -12,7 +12,7 @@ contract GPGWalletDeployer {
     }
 
     // This has to remain external, because calldataload doesn't work properly internally.
-    function deploy(bytes calldata gpgPublicKey) external payable returns (address walletAddress) {
+    function deploy(bytes calldata /* gpgPublicKey */) external payable returns (address walletAddress) {
         assembly {
             let ptr := mload(0x40)
             let pubKeyLength := calldataload(0x24)
@@ -51,7 +51,7 @@ contract GPGWalletDeployer {
         return walletAddress;
     }
 
-    function predictAddress(bytes memory gpgPublicKey) external view returns (address walletAddress, bool isDeployed) {
+    function predictAddress(bytes memory /* gpgPublicKey */) external view returns (address walletAddress, bool isDeployed) {
         assembly {
             let ptr := mload(0x40)
             let pubKeyLength := calldataload(0x24)

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import { Test, console } from "forge-std/Test.sol";
-import { GPGWalletDeployer } from "src/GPGWalletDeployer.sol";
-import { GPGWallet } from "src/GPGWalletImpl.sol";
-import { GPGAirdropper } from "src/GPGAirdropper.sol";
+import { GPGWalletDeployer } from "src/GPGWallet/GPGWalletDeployer.sol";
+import { GPGWallet } from "src/GPGWallet/GPGWalletImpl.sol";
+import { GPGAirdropper } from "src/GPGWallet/GPGAirdropper.sol";
 
 contract GPGWalletTest is Test {
     GPGWalletDeployer deployer;
@@ -45,7 +45,7 @@ contract GPGWalletTest is Test {
         assertEq(wallets[0].balance, 1);
     }
 
-    function testAirdropMultiple(bytes[] memory gpgKeys, uint256[] memory amounts) public {
+    function testAirdropMultiple(bytes[] memory gpgKeys) public {
         uint[] memory amounts = new uint[](gpgKeys.length);
         for (uint i = 0; i < gpgKeys.length; i++) {
             amounts[i] = 1;
