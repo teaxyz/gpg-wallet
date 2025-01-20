@@ -158,8 +158,10 @@ contract GPGWallet is EIP712 {
             revert("GPGWallet: implementation contract does not have a public key");
         } else {
             assembly {
-                // Get a free memory pointer
+                // Get the free memory pointer
                 let ptr := mload(0x40)
+
+                // 0x2d is the offset of the public key in the code
                 extcodecopy(address(), ptr, 0x2d, 0x20)
                 extcodecopy(address(), add(ptr, 0x20), add(0x2d, 0x20), mload(ptr))
 
