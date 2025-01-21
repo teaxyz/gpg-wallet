@@ -42,7 +42,7 @@ contract GPGWallet is EIP712 {
     function addSigner(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt, bytes memory signature) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = _hashTypedDataV4(getAddSignerStructHash(signer, paymasterFee, deadline, salt));
+        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, salt);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -62,7 +62,7 @@ contract GPGWallet is EIP712 {
     function withdrawAll(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt, bytes memory signature) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = _hashTypedDataV4(getWithdrawAllStructHash(to, paymasterFee, deadline, salt));
+        bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, salt);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -96,7 +96,7 @@ contract GPGWallet is EIP712 {
     function executeWithSig(address to, uint256 value, bytes memory data, uint256 paymasterFee, uint256 deadline, bytes32 salt, bytes memory signature, bool gpg) public returns (bytes memory) {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = _hashTypedDataV4(getExecuteStructHash(to, value, data, paymasterFee, deadline, salt));
+        bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, salt);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -180,9 +180,9 @@ contract GPGWallet is EIP712 {
     /// @param deadline Timestamp after which the signature is invalid
     /// @param salt Random value to ensure uniqueness
     /// @return bytes32 The computed struct hash
-    function getAddSignerStructHash(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt) public pure returns (bytes32) {
+    function getAddSignerStructHash(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt) public view returns (bytes32) {
         bytes32 typehash = keccak256("AddSigner(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt)");
-        return keccak256(abi.encode(typehash, signer, paymasterFee, deadline, salt));
+        return _hashTypedDataV4(keccak256(abi.encode(typehash, signer, paymasterFee, deadline, salt)));
     }
 
     /// @notice Computes the struct hash for withdrawing all funds
@@ -191,9 +191,9 @@ contract GPGWallet is EIP712 {
     /// @param deadline Timestamp after which the signature is invalid
     /// @param salt Random value to ensure uniqueness
     /// @return bytes32 The computed struct hash
-    function getWithdrawAllStructHash(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt) public pure returns (bytes32) {
+    function getWithdrawAllStructHash(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt) public view returns (bytes32) {
         bytes32 typehash = keccak256("WithdrawAll(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt)");
-        return keccak256(abi.encode(typehash, to, paymasterFee, deadline, salt));
+        return _hashTypedDataV4(keccak256(abi.encode(typehash, to, paymasterFee, deadline, salt)));
     }
 
     /// @notice Computes the struct hash for executing a transaction
@@ -204,8 +204,8 @@ contract GPGWallet is EIP712 {
     /// @param deadline Timestamp after which the signature is invalid
     /// @param salt Random value to ensure uniqueness
     /// @return bytes32 The computed struct hash
-    function getExecuteStructHash(address to, uint256 value, bytes memory data, uint256 paymasterFee, uint256 deadline, bytes32 salt) public pure returns (bytes32) {
+    function getExecuteStructHash(address to, uint256 value, bytes memory data, uint256 paymasterFee, uint256 deadline, bytes32 salt) public view returns (bytes32) {
         bytes32 typehash = keccak256("Execute(address to, uint256 value, bytes data, uint256 paymasterFee, uint256 deadline, bytes32 salt)");
-        return keccak256(abi.encode(typehash, to, value, keccak256(data), paymasterFee, deadline, salt));
+        return _hashTypedDataV4(keccak256(abi.encode(typehash, to, value, keccak256(data), paymasterFee, deadline, salt)));
     }
 }
