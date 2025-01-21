@@ -10,12 +10,12 @@ contract Airdropper {
         deployer = _deployer;
     }
 
-    function gpgAirdrop(bytes[] memory gpgKeys, uint[] memory amounts) public payable returns (address[] memory wallets) {
-        require(gpgKeys.length == amounts.length, "Airdropper: keys and amounts length mismatch");
+    function gpgAirdrop(bytes8[] memory keyIds, uint[] memory amounts) public payable returns (address[] memory wallets) {
+        require(keyIds.length == amounts.length, "Airdropper: keys and amounts length mismatch");
 
-        wallets = new address[](gpgKeys.length);
-        for (uint i = 0; i < gpgKeys.length; i++) {
-            wallets[i] = deployer.deploy{value: amounts[i]}(gpgKeys[i]);
+        wallets = new address[](keyIds.length);
+        for (uint i = 0; i < keyIds.length; i++) {
+            wallets[i] = deployer.deploy{value: amounts[i]}(keyIds[i]);
         }
 
         return wallets;

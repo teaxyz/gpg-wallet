@@ -11,7 +11,7 @@ contract GPGWalletDeployer {
         implementation = _implementation;
     }
 
-    function deploy(bytes calldata /* gpgPublicKey */) external payable returns (address walletAddress) {
+    function deploy(bytes8 /* keyId */) external payable returns (address walletAddress) {
         assembly {
             // Memory Layout:
             // ----
@@ -20,30 +20,18 @@ contract GPGWalletDeployer {
             // 0x15   salt (bytes32)                 (32 bytes)
             // 0x35   Bytecode Hash (bytes32)        (32 bytes)
             // ----
-            // 0x55   ERC-1167 Constructor + Header  (21 bytes)
-            // 0x6A   implementation (address)       (20 bytes)
-            // 0x7E   ERC-1167 Footer                (15 bytes)
-            // 0x8D   key (bytes)                    (calldataload(24) bytes)
+            // 0x55   ERC-1167 Constructor + Header  (20 bytes)
+            // 0x69   implementation (address)       (20 bytes)
+            // 0x7D   ERC-1167 Footer                (15 bytes)
+            // 0x8D   keyID (bytes8)                 (8 bytes)
 
             let ptr := mload(0x40)
-            let pubKeyLength := calldataload(0x24)
+            let bytecodeLength := 0x40 // 0x8D + 0x08 - 0x55
 
-            if gt(pubKeyLength, 0xffa8) {
-                mstore(0x00, 0x7e22dc72)
-                revert(0x1c, 0x04)
-            }
-
-            let bytecodeLength := add(add(0x38, 0x20), pubKeyLength) // 0x8c + 0x20 (length) + pubKeyLength - 0x55
-
-            mstore(add(ptr, 0x6d), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
-            mstore(add(ptr, 0x5e), sload(implementation.slot)) // implementation
-            mstore(add(ptr, 0x4a), 0x80600b3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
-            mstore(add(ptr, 0x39), bytecodeLength)
-            mstore8(add(ptr, 0x55), 0x3d)
-            mstore8(add(ptr, 0x56), 0x61)
-
-            mstore(add(ptr, 0x8d), pubKeyLength)
-            calldatacopy(add(add(ptr, 0x8d), 0x20), 0x44, pubKeyLength)
+            mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
+            mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
+            mstore(add(ptr, 0x49), 0x3d603f80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            calldatacopy(add(ptr, 0x8d), 0x04, 0x20)
 
             // Copy create2 computation data to memory
             mstore8(ptr, 0xff) // 0xFF
@@ -54,6 +42,7 @@ contract GPGWalletDeployer {
             walletAddress := shr(96, shl(96, keccak256(ptr, 0x55)))
 
             if iszero(extcodesize(walletAddress)) {
+                log0(add(ptr, 0x55), bytecodeLength)
                 let deployedAddress := create2(callvalue(), add(ptr, 0x55), bytecodeLength, 0)
 
                 if iszero(eq(deployedAddress, walletAddress)) {
@@ -68,26 +57,15 @@ contract GPGWalletDeployer {
         return walletAddress;
     }
 
-    function predictAddress(bytes memory /* gpgPublicKey */) external view returns (address walletAddress, bool isDeployed) {
+    function predictAddress(bytes8 /* gpgPublicKey */) external view returns (address walletAddress, bool isDeployed) {
         assembly {
             let ptr := mload(0x40)
-            let pubKeyLength := calldataload(0x24)
-            let bytecodeLength := add(add(0x38, 0x20), pubKeyLength) // 0x8c + 0x20 (length) + pubKeyLength - 0x55
+            let bytecodeLength := 0x40 // 0x8D + 0x08 - 0x55
 
-            if gt(bytecodeLength, 0xffff) {
-                mstore(0x00, 0x7e22dc72)
-                revert(0x1c, 0x04)
-            }
-
-            mstore(add(ptr, 0x6d), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
-            mstore(add(ptr, 0x5e), sload(implementation.slot)) // implementation
-            mstore(add(ptr, 0x4a), 0x80600b3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
-            mstore(add(ptr, 0x39), bytecodeLength)
-            mstore8(add(ptr, 0x55), 0x3d)
-            mstore8(add(ptr, 0x56), 0x61)
-
-            mstore(add(ptr, 0x8d), pubKeyLength)
-            calldatacopy(add(add(ptr, 0x8d), 0x20), 0x44, pubKeyLength)
+            mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
+            mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
+            mstore(add(ptr, 0x49), 0x3d603f80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            calldatacopy(add(ptr, 0x8d), 0x04, 0x20)
 
             // Copy create2 computation data to memory
             mstore8(ptr, 0xff) // 0xFF

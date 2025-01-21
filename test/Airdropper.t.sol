@@ -16,9 +16,9 @@ contract AirdropperTest is Test {
         airdropper = new Airdropper(deployer);
     }
 
-    function testAirdropSingleGPG(bytes memory gpgKey) public {
-        bytes[] memory keys = new bytes[](1);
-        keys[0] = gpgKey;
+    function testAirdropSingleGPG(bytes8 keyId) public {
+        bytes8[] memory keys = new bytes8[](1);
+        keys[0] = keyId;
         uint[] memory amounts = new uint[](1);
         amounts[0] = 1;
 
@@ -40,13 +40,13 @@ contract AirdropperTest is Test {
         assertEq(addr.balance, 1);
     }
 
-    function testAirdropMultipleGPG(bytes[] memory gpgKeys) public {
-        uint[] memory amounts = new uint[](gpgKeys.length);
-        for (uint i = 0; i < gpgKeys.length; i++) {
+    function testAirdropMultipleGPG(bytes8[] memory keyIds) public {
+        uint[] memory amounts = new uint[](keyIds.length);
+        for (uint i = 0; i < keyIds.length; i++) {
             amounts[i] = 1;
         }
 
-        address[] memory wallets = airdropper.gpgAirdrop{value: gpgKeys.length}(gpgKeys, amounts);
+        address[] memory wallets = airdropper.gpgAirdrop{value: keyIds.length}(keyIds, amounts);
         for (uint i = 0; i < wallets.length; i++) {
             assertEq(wallets[i].balance, 1);
         }

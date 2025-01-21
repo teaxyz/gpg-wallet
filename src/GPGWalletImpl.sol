@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { console } from "forge-std/Console.sol";
 
 /// @title GPGWallet
 /// @notice A smart contract wallet that supports both GPG and ECDSA signatures for transaction execution
@@ -122,7 +123,7 @@ contract GPGWallet is EIP712 {
     /// @param signature The GPG signature to verify
     /// @return bool True if the signature is valid
     function _isValidGPGSignature(bytes32 digest, bytes memory signature) internal view returns (bool) {
-        bytes memory data = abi.encode(digest, publicKey(), signature);
+        bytes memory data = abi.encode(digest, keyId(), signature);
         (bool success, bytes memory returndata) = GPG_VERIFIER.staticcall(data);
         require(success && returndata.length == 32, "GPGWallet: gpg precompile error");
 
@@ -149,28 +150,27 @@ contract GPGWallet is EIP712 {
     //              VIEW              //
     ////////////////////////////////////
 
-    /// @notice Returns the GPG public key associated with this wallet
+    /// @notice Returns the GPG Key ID associated with this wallet
+    /// @dev This is the last 8 bytes of the SHA hash of the public key
     /// @dev This value is hardcoded into the code of the proxy
     /// @dev This call will fail when performed on the implementation
-    /// @return pubKey bytes The GPG public key
-    function publicKey() public view returns (bytes memory pubKey) {
+    /// @return keyId The 8 byte Key ID associated with the wallet
+    function keyId() public view returns (bytes8) {
         if (address(this) == implementation) {
             revert("GPGWallet: implementation contract does not have a public key");
         } else {
+            bytes8 keyId;
             assembly {
-                // Get the free memory pointer
-                let ptr := mload(0x40)
-
-                // 0x2d is the offset of the public key in the code
-                extcodecopy(address(), ptr, 0x2d, 0x20)
-                extcodecopy(address(), add(ptr, 0x20), add(0x2d, 0x20), mload(ptr))
-
-                // Replace the free memory pointer
-                mstore(0x40, add(add(ptr, 0x20), mload(ptr)))
-
-                // Set result to point to our bytes array
-                pubKey := ptr
+                // Allocate memory for the bytes8
+                let ptr := mload(0x40)  // Get free memory pointer
+                // Update the free memory pointer
+                mstore(0x40, add(ptr, 0x20))
+                // Copy the code to the pointer
+                extcodecopy(address(), ptr, 0x2e, 0x08)
+                // Load result into the bytes8 variable
+                keyId := mload(ptr)
             }
+            return keyId;
         }
     }
 
