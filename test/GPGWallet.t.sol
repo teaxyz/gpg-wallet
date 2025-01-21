@@ -12,6 +12,9 @@ contract GPGWalletTest is Test {
     // Airdropper airdropper;
     address eoa = makeAddr("eoa");
 
+    event GPGWalletDeployed(address wallet, uint256 amount);
+    event FundsTransferred(address wallet, uint256 amount);
+
     // to get key ids: gpg --list-keys
     bytes8 ED_KEY_ID = bytes8(0x49CEB217B43F2378);
     bytes8 RSA_KEY_ID = bytes8(0x4C4C3AB789F86A6F);
@@ -26,9 +29,22 @@ contract GPGWalletTest is Test {
         // airdropper = new Airdropper(deployer);
     }
 
-    function testDeployment(bytes8 keyId) public {
-        address wallet = deployer.deploy(keyId);
+    function testDeployment(bytes8 keyId, uint256 value) public {
+        vm.deal(address(this), value);
+
+        vm.expectEmit();
+        (address predicted,) = deployer.predictAddress(keyId);
+        emit GPGWalletDeployed(predicted, value);
+
+        address wallet = deployer.deploy{value: value}(keyId);
         assert(wallet.code.length > 0);
+    }
+
+    function testDeploymentGas() public {
+        bytes8 keyId = bytes8(0x1234567890abcdef);
+        uint gasBefore = gasleft();
+        address wallet = deployer.deploy(keyId);
+        // console.log(gasBefore - gasleft());
     }
 
     function testPredictAddress(bytes8 keyId) public {
@@ -41,6 +57,20 @@ contract GPGWalletTest is Test {
 
         assertEq(deployedBefore, false);
         assertEq(deployedAfter, true);
+    }
+
+    function testRedeployTransfers() public {
+        bytes8 keyId = bytes8(0x1234567890abcdef);
+        uint256 amount = 100;
+
+        address wallet = deployer.deploy(keyId);
+        assertEq(wallet.balance, 0);
+
+        vm.expectEmit();
+        emit FundsTransferred(wallet, amount);
+        deployer.deploy{value: amount}(keyId);
+
+        assertEq(wallet.balance, amount);
     }
 
     function testReadKeyId(bytes8 keyId) public {

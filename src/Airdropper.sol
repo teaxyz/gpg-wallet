@@ -24,10 +24,8 @@ contract Airdropper {
     function eoaAirdrop(address[] memory addresses, uint[] memory amounts) public payable {
         require(addresses.length == amounts.length, "Airdropper: addresses and amounts length mismatch");
 
-        address[] memory wallets = new address[](addresses.length);
         for (uint i = 0; i < addresses.length; i++) {
             payable(addresses[i]).transfer(amounts[i]);
-            wallets[i] = addresses[i];
         }
     }
 }

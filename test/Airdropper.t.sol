@@ -69,4 +69,30 @@ contract AirdropperTest is Test {
             assertEq(addresses[i].balance, 1);
         }
     }
+
+    function testGPGAirdropGas() public {
+        uint numAirdrops = 500;
+        bytes8[] memory keyIds = new bytes8[](numAirdrops);
+        uint[] memory amounts = new uint[](keyIds.length);
+        for (uint i = 0; i < keyIds.length; i++) {
+            keyIds[i] = bytes8(keccak256(abi.encode(i)));
+            amounts[i] = 1;
+        }
+        uint gas = gasleft();
+        airdropper.gpgAirdrop{value: keyIds.length}(keyIds, amounts);
+        assert(gas - gasleft() < 30_000_000); // 29_131_988
+    }
+
+    function testEOAAirdropGas() public {
+        uint numAirdrops = 850;
+        address[] memory addresses = new address[](numAirdrops);
+        uint[] memory amounts = new uint[](addresses.length);
+        for (uint i = 0; i < addresses.length; i++) {
+            addresses[i] = address(uint160(1000 + i));
+            amounts[i] = 1;
+        }
+        uint gas = gasleft();
+        airdropper.eoaAirdrop{value: addresses.length}(addresses, amounts);
+        assert(gas - gasleft() < 30_000_000); // 29_757_817
+    }
 }
