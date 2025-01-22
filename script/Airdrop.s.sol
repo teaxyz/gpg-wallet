@@ -4,12 +4,14 @@ pragma solidity ^0.8.15;
 import { Script } from "forge-std/Script.sol";
 import { console } from "forge-std/Console.sol";
 import { Airdropper } from "src/Airdropper.sol";
+import { GPGWalletDeployer } from "src/GPGWalletDeployer.sol";
 
 // todo: add dotenv stuff
 // forge script --chain sepolia script/NFT.s.sol:MyScript --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vvvv
 
 contract AirdropScript is Script {
     Airdropper constant AIRDROPPER = Airdropper(address(1));
+    GPGWalletDeployer constant DEPLOYER = GPGWalletDeployer(address(2));
 
 
     // DO NOT CHANGE ORDER
@@ -21,6 +23,7 @@ contract AirdropScript is Script {
     struct GPGAirdrop {
         uint256 amount;
         bytes keyId;
+        bool requireNewDeployment;
     }
 
     struct AddressAirdropBatch {
@@ -50,12 +53,10 @@ contract AirdropScript is Script {
             sum += airdropBatch.airdrops[i].amount;
             keyIds[i] = bytes8(airdropBatch.airdrops[i].keyId);
             amounts[i] = airdropBatch.airdrops[i].amount;
-            console.log(amounts[i]);
-            console.logBytes8(keyIds[i]);
         }
         require(sum == airdropBatch.totalValue, "wrong total funds");
 
-        // address[] memory wallets = AIRDROPPER.gpgAirdrop{value: sum}(keyIds, amounts);
+        address[] memory wallets = AIRDROPPER.gpgAirdrop{value: sum}(keyIds, amounts);
         // do something with the wallets
 
         // vm.stopBroadcast();

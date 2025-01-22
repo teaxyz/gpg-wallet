@@ -8,9 +8,6 @@ contract GPGWalletDeployer {
     // cast keccak "GPGWalletDeployed(address,uint256)
     bytes32 constant WALLET_DEPLOYED_EVENT = 0xf934bdb517e8b19d76877e2539a250338b642109c704f9b5a12af67cc82c8e24;
 
-    // cast keccak "FundsTransferred(address,uint256)
-    bytes32 constant FUNDS_TRANSFERRED_EVENT = 0x8c9a4f13b67cb64d7c6aa1ae0c9bf07694af521a28b93e7060020810ab4bc59f;
-
     constructor(address _implementation) {
         implementation = _implementation;
     }
@@ -45,29 +42,21 @@ contract GPGWalletDeployer {
             // Compute account address & check for existing code
             walletAddress := shr(96, shl(96, keccak256(ptr, 0x55)))
 
-            switch iszero(extcodesize(walletAddress))
-            case 1 {
-                let deployedAddress := create2(callvalue(), add(ptr, 0x55), bytecodeLength, 0)
-
-                if iszero(eq(deployedAddress, walletAddress)) {
-                    mstore(0x89, 0x705f331c1) // `AccountCreationFailed(bytes8)`
-                    revert(0x89, 0xc)         // keyId is already at 0x8D
-                }
-
-                mstore(add(ptr, 0x95), walletAddress)
-                mstore(add(ptr, 0xb5), callvalue())
-                log1(add(ptr, 0x95), 0x40, WALLET_DEPLOYED_EVENT) // `GPGWalletDeployed(address,uint256)`
+            if iszero(iszero(extcodesize(walletAddress))) {
+                mstore(0x00, 0x340630c7) // `WalletAlreadyDeployed()`.
+                revert(0x1c, 0x04)
             }
-            case 0 {
-                if iszero(call(gas(), walletAddress, callvalue(), 0x00, 0x00, 0x00, 0x00)) {
-                    mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
-                    revert(0x1c, 0x04)
-                }
 
-                mstore(add(ptr, 0x95), walletAddress)
-                mstore(add(ptr, 0xb5), callvalue())
-                log1(add(ptr, 0x95), 0x40, FUNDS_TRANSFERRED_EVENT) // `FundsTransferred(address,uint256)`
+            let deployedAddress := create2(callvalue(), add(ptr, 0x55), bytecodeLength, 0)
+
+            if iszero(eq(deployedAddress, walletAddress)) {
+                mstore(0x89, 0x705f331c1) // `AccountCreationFailed(bytes8)`
+                revert(0x89, 0xc)         // keyId is already at 0x8D
             }
+
+            mstore(add(ptr, 0x95), walletAddress)
+            mstore(add(ptr, 0xb5), callvalue())
+            log1(add(ptr, 0x95), 0x40, WALLET_DEPLOYED_EVENT) // `GPGWalletDeployed(address,uint256)`
         }
 
         return walletAddress;

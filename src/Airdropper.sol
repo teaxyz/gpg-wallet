@@ -15,7 +15,24 @@ contract Airdropper {
 
         wallets = new address[](keyIds.length);
         for (uint i = 0; i < keyIds.length; i++) {
+            (, bool isDeployed) = deployer.predictAddress(keyIds[i]);
+            require(!isDeployed, "key already deployed");
             wallets[i] = deployer.deploy{value: amounts[i]}(keyIds[i]);
+        }
+
+        return wallets;
+    }
+
+    function gpgAirdropToExisting(bytes8[] memory keyIds, uint[] memory amounts) public payable returns (address[] memory wallets) {
+        require(keyIds.length == amounts.length, "Airdropper: keys and amounts length mismatch");
+
+        wallets = new address[](keyIds.length);
+        for (uint i = 0; i < keyIds.length; i++) {
+            bool isDeployed;
+            (wallets[i], isDeployed) = deployer.predictAddress(keyIds[i]);
+
+            require(isDeployed, "key already deployed");
+            payable(wallets[i]).transfer(amounts[i]);
         }
 
         return wallets;
