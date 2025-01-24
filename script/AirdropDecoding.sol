@@ -6,14 +6,13 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract AirdropJSONDecodingStructs {
     /**
-        !!! DO NOT CHANGE ORDER !!!
-
-        These structs MUST stay exactly as-is
-        for JSON decoding to work as expected.
-
-        https://book.getfoundry.sh/cheatcodes/parse-json?highlight=json#decoding-json-objects-into-solidity-structs
-    */
-
+     * !!! DO NOT CHANGE ORDER !!!
+     *
+     *     These structs MUST stay exactly as-is
+     *     for JSON decoding to work as expected.
+     *
+     *     https://book.getfoundry.sh/cheatcodes/parse-json?highlight=json#decoding-json-objects-into-solidity-structs
+     */
     struct AddressAirdrop {
         address addr;
         uint256 amount;

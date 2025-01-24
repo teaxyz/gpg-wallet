@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Script, console } from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 
 contract SendL2Tx is Script {
     address immutable EOA = makeAddr("eoa");

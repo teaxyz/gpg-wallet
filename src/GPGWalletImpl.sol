@@ -145,7 +145,11 @@ contract GPGWallet is EIP712 {
     /// @param digest The message digest to verify
     /// @param signature The GPG signature to verify
     /// @return bool True if the signature is valid
-    function _isValidGPGSignature(bytes32 digest, bytes memory pubKey, bytes memory signature) internal view returns (bool) {
+    function _isValidGPGSignature(bytes32 digest, bytes memory pubKey, bytes memory signature)
+        internal
+        view
+        returns (bool)
+    {
         bytes memory data = abi.encode(digest, keyId(), pubKey, signature);
         (bool success, bytes memory returndata) = GPG_VERIFIER.staticcall(data);
         require(success && returndata.length == 32, "GPGWallet: gpg precompile error");

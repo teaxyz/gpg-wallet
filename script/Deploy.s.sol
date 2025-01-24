@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 import {Script} from "forge-std/Script.sol";
-import { DeployHelper } from "./DeployHelper.sol";
+import {DeployHelper} from "./DeployHelper.sol";
 
 contract DeployScript is Script, DeployHelper {
     function run() external {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Script, console } from "forge-std/Script.sol";
-import { FakeWETH, MockOracle } from "./MockOracle.sol";
-import { IGasPriceOracle } from "./IGasPriceOracle.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {FakeWETH, MockOracle} from "./MockOracle.sol";
+import {IGasPriceOracle} from "./IGasPriceOracle.sol";
 
 contract UpdateOracle is Script {
     IGasPriceOracle constant GAS_PRICE_ORACLE = IGasPriceOracle(0x420000000000000000000000000000000000000F);

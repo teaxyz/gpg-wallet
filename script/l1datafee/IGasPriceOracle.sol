@@ -8,8 +8,8 @@ interface IGasPriceOracle {
     function getLatestPrice() external view returns (uint96, uint160);
     function setFallbackPrice(uint160) external;
     function getFallbackPrice() external view returns (uint160);
-    function getOracleConfig() external view returns (address,uint96,bool,address);
-    function setOracleConfig(uint96,address) external;
+    function getOracleConfig() external view returns (address, uint96, bool, address);
+    function setOracleConfig(uint96, address) external;
     function CUSTOM_GAS_TOKEN_ORACLE_SLOT() external view returns (bytes32);
     function WETH_ADDRESS_SLOT() external view returns (bytes32);
     function CUSTOM_GAS_TOKEN_PRICE_SLOT() external view returns (bytes32);
