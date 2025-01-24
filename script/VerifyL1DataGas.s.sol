@@ -7,8 +7,8 @@ contract VerifyL1DataGas is Script {
     address immutable EOA = makeAddr("eoa");
 
     function run() external {
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // vm.startBroadcast(deployerPrivateKey);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
         // 4 words * 32 bytes = 128 bytes
         bytes32 h = keccak256("hello");
@@ -16,6 +16,6 @@ contract VerifyL1DataGas is Script {
         (bool s,) = EOA.call(cd);
         require(s);
 
-        // vm.stopBroadcast();
+        vm.stopBroadcast();
     }
 }
