@@ -91,18 +91,20 @@ contract GPGWalletTest is Test {
 
         // ED: 0x5af06adaf66d4711487c062b6d213c163973294ff7b0d532289274c566b57bb4
         // RSA: 0x8d36183ef046bbd47bdaf0974f44afb4a4cfe0ec3b63bb1b06338f1bc0deb097
-        bytes32 structHash = wallet.getAddSignerStructHash(EOA, 0, 0, bytes32(0));
-        console.logBytes32(structHash);
+        // bytes32 structHash = wallet.getAddSignerStructHash(EOA, 0, 0, bytes32(0));
+        bytes32 structHash = 0x5021a45a1474d7e53a3982b9ca70b5fe85009ffe01c18100fb8a2e18b32ac7ba;
+        // console.logBytes32(structHash);
 
         // // echo "{structHash}" | xxd -r -p | gpg -u {key id} --pinentry-mode loopback --detach-sign | xxd -p | tr -d '\n'
-        // bytes memory signedED =
-        //     hex"88750400160a001d162104c4e971386f7e24899b765c6b49ceb217b43f23780502678fee15000a091049ceb217b43f237896b40100f52ea02d10938943be614b37cdfb88e50747369bd0ee9fef045db0ff707ca90f00fe3e44932659240c78c30b880eb479a1e6dfada998d7e6f8868ef00eb4dc3dd000";
+        bytes memory signedED =
+            // hex"88750400160a001d162104c4e971386f7e24899b765c6b49ceb217b43f23780502678fee15000a091049ceb217b43f237896b40100f52ea02d10938943be614b37cdfb88e50747369bd0ee9fef045db0ff707ca90f00fe3e44932659240c78c30b880eb479a1e6dfada998d7e6f8868ef00eb4dc3dd000";
+            hex"88750400160a001d162104c4e971386f7e24899b765c6b49ceb217b43f237805026793d29c000a091049ceb217b43f2378221b0100f01127f4494ccba47c7c177dfc84fd37e2521e4cdca171ff68220a36156d2a1300ff5cdff84af9d791cc03bf3d1098c97f858810d4858f4fed7bbc3c19ef166dda0c";
         // bytes memory signedRSA =
         //     hex"89023304000108001d162104fd22037dffd75189a0399b084c4c3ab789f86a6f0502678fede6000a09104c4c3ab789f86a6f65760fff6e9f5a7b79b0a6b703e0b4ced6677461626f0f8dbe59bfd2c3b3b8db53e9077b972c1202567d2a28817e0e4f0b6944808aedb0b430c606c7267679bdb97c3af554684cd36065c84567e0c1e9c4a251f7de89e4e7c167307a29e3a63352243d48fc8d7375b861462e03a66e7be075edd1be586ef7c27bf634b96b9a4945d67504f29b3fa2292de37b6680829cdcd956ba11b571311adaf3598e145eee0ca1612f3a7014005e6403d231129d03240bc6273e835ba227bfad89de650fcc63f392128080a3f01e8b51f9c22ed1b92fdadb9581292e26e582f2017c5e94423a6f804f47f280c881e42a776abf26ddbc4d5b21a23e88bc78c6e1f811a064e5e5d4f77771518d64856eb88fb55b7560441ac1f99abae48bb3cd172e4e002f4297fbf53bec4b131aa9318e5b3811738ba885bd76b99368eb706380603c2161c1e5efb5918662816b86823029aa3f0a7f0159922bcb1188169d4f4ceebd0b274f210a1adbd4f8542800c3df8885e9fd55ec4d9af9637d944d99c68b37e568c5009bdfb63e1e6900bc55996150947b31b18bf2c4a8eea5454c67767f50371a0702ca8e26e8fd74076cf5a0e149d890537af1afd06954dd44892768145ed92dc98012b1ef28101d2694afe511a77e02caedaa9522b0263adbe9cd188222f4dda3db15c699d04148f3706d92484c339c12456f9d39f99d7e2d0b1e4f21152f776d2ccaddc1bc";
 
         // this verifies on the precompile in tea-geth!
         // console.logBytes(abi.encode(structHash, RSA_KEY_ID, RSA_KEY, signedRSA));
-        // console.logBytes(abi.encode(structHash, ED_KEY_ID, ED_KEY, signedED));
+        console.logBytes(abi.encode(structHash, ED_KEY_ID, ED_KEY, signedED));
     }
 
     // withdraw all with gpg key

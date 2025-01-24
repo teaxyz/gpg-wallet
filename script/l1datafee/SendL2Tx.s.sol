@@ -7,7 +7,7 @@ contract SendL2Tx is Script {
     address immutable EOA = makeAddr("eoa");
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = uint256(0x31dbb16ca3f7dadf52f55c0b8e8da910f742fb3891dd9f20d47baafa436a4d06);
         vm.startBroadcast(deployerPrivateKey);
 
         // 4 words * 32 bytes = 128 bytes
