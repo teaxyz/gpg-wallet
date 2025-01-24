@@ -16,13 +16,13 @@ contract AirdropScript is Script, AirdropDecoding {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // @todo error handling, logging, etc
+        // @todo error handling, logging, saving to json, etc
         for (uint256 i; i < NUM_KEYID_AIRDROP_FILES; i++) {
             (bytes8[] memory keyIds, uint256[] memory amounts, uint256 sum) = _getKeyIDAirdropBatch(i);
             address[] memory wallets = AIRDROPPER.airdropToKeyIds{value: sum}(keyIds, amounts);
             for (uint256 j; j < wallets.length; j++) {
-                console.log("WALLET DEPLOYED: ", wallets[j]);
-                console.log("KEYID: ", keyIds[j]);
+                console.log(wallets[j], " deployed for keyId:");
+                console.logBytes8(keyIds[j]);
                 console.log("********");
             }
         }
