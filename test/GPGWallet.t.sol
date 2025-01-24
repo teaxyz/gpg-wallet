@@ -103,7 +103,7 @@ contract GPGWalletTest is Test {
 
         // this verifies on the precompile in tea-geth!
         // console.logBytes(abi.encode(structHash, RSA_KEY_ID, RSA_KEY, signedRSA));
-        console.logBytes(abi.encode(structHash, ED_KEY_ID, ED_KEY, signedED));
+        // console.logBytes(abi.encode(structHash, ED_KEY_ID, ED_KEY, signedED));
     }
 
     // withdraw all with gpg key
