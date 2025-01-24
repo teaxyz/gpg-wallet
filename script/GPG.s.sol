@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import {Script} from "forge-std/Script.sol";
-import {console} from "forge-std/Console.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {GPGWallet} from "src/GPGWalletImpl.sol";
 
 contract GPGScript is Script {
