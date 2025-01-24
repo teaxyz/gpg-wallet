@@ -31,6 +31,7 @@ contract AirdropperTest is Test {
         vm.assume(uint160(addr) > 10);
         vm.assume(addr.balance == 0);
         vm.assume(addr.code.length == 0);
+        vm.assume(addr != 0x000000000000000000636F6e736F6c652e6c6f67);
 
         address[] memory addresses = new address[](1);
         addresses[0] = addr;
