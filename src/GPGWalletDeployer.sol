@@ -12,7 +12,7 @@ contract GPGWalletDeployer {
         implementation = _implementation;
     }
 
-    function deploy(bytes8 /* keyId */) external payable returns (address walletAddress) {
+    function deploy(bytes8 /* keyId */ ) external payable returns (address walletAddress) {
         assembly {
             // Memory Layout:
             // ----
@@ -51,7 +51,7 @@ contract GPGWalletDeployer {
 
             if iszero(eq(deployedAddress, walletAddress)) {
                 mstore(0x89, 0x705f331c1) // `AccountCreationFailed(bytes8)`
-                revert(0x89, 0xc)         // keyId is already at 0x8D
+                revert(0x89, 0xc) // keyId is already at 0x8D
             }
 
             mstore(add(ptr, 0x95), walletAddress)
@@ -62,7 +62,11 @@ contract GPGWalletDeployer {
         return walletAddress;
     }
 
-    function predictAddress(bytes8 /* gpgPublicKey */) external view returns (address walletAddress, bool isDeployed) {
+    function predictAddress(bytes8 /* gpgPublicKey */ )
+        external
+        view
+        returns (address walletAddress, bool isDeployed)
+    {
         assembly {
             let ptr := mload(0x40)
             let bytecodeLength := 0x40 // 0x8D + 0x08 - 0x55

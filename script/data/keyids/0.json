@@ -1,0 +1,13 @@
+{
+    "airdrops": [
+        {
+            "amount": 1,
+            "key_id": "0x1111111111111111"
+        },
+        {
+            "amount": 1,
+            "key_id": "0x49CEB217B43F2378"
+        }
+    ],
+    "totalValue": 2
+}

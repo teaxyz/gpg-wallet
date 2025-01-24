@@ -5,60 +5,35 @@ import { Script } from "forge-std/Script.sol";
 import { console } from "forge-std/Console.sol";
 import { Airdropper } from "src/Airdropper.sol";
 import { GPGWalletDeployer } from "src/GPGWalletDeployer.sol";
+import { AirdropDecoding } from "./AirdropDecoding.sol";
+import { DeployHelper } from "./DeployHelper.sol";
 
-// todo: add dotenv stuff
-// forge script --chain sepolia script/NFT.s.sol:MyScript --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vvvv
-
-contract AirdropScript is Script {
-    Airdropper constant AIRDROPPER = Airdropper(address(1));
-    GPGWalletDeployer constant DEPLOYER = GPGWalletDeployer(address(2));
-
-
-    // DO NOT CHANGE ORDER
-    // Must stay consistent for proper JSON decoding
-    struct AddressAirdrop {
-        uint256 amount;
-        address addr;
-    }
-    struct GPGAirdrop {
-        uint256 amount;
-        bytes keyId;
-        bool requireNewDeployment;
-    }
-
-    struct AddressAirdropBatch {
-        AddressAirdrop[] airdrops;
-        uint256 totalValue;
-    }
-
-    struct GPGAirdropBatch {
-        GPGAirdrop[] airdrops;
-        uint256 totalValue;
-    }
+contract AirdropScript is Script, AirdropDecoding {
+    Airdropper AIRDROPPER = Airdropper(address(1));
+    uint256 NUM_KEYID_AIRDROP_FILES = 1;
+    uint256 NUM_ADDRESS_AIRDROP_FILES = 1;
 
     function run() external {
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // vm.startBroadcast(deployerPrivateKey);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/script/data/keyids1.json");
-        string memory json = vm.readFile(path);
-        bytes memory data = vm.parseJson(json);
-        GPGAirdropBatch memory airdropBatch = abi.decode(data, (GPGAirdropBatch));
-
-        uint sum;
-        bytes8[] memory keyIds = new bytes8[](airdropBatch.airdrops.length);
-        uint256[] memory amounts = new uint256[](airdropBatch.airdrops.length);
-        for (uint i; i < airdropBatch.airdrops.length; i++) {
-            sum += airdropBatch.airdrops[i].amount;
-            keyIds[i] = bytes8(airdropBatch.airdrops[i].keyId);
-            amounts[i] = airdropBatch.airdrops[i].amount;
+        // @todo error handling, logging, etc
+        for (uint i; i < NUM_KEYID_AIRDROP_FILES; i++) {
+            (bytes8[] memory keyIds, uint256[] memory amounts, uint256 sum) = _getKeyIDAirdropBatch(i);
+            address[] memory wallets = airdropper.airdropToKeyIds{value: sum}(keyIds, amounts);
+            for (uint j; j < wallets.length; j++) {
+                if (keyIds[j] == bytes8(0x49CEB217B43F2378)) {
+                    console.log("ADDRESS TO SAVE");
+                    console.log(wallets[j]);
+                }
+            }
         }
-        require(sum == airdropBatch.totalValue, "wrong total funds");
 
-        address[] memory wallets = AIRDROPPER.gpgAirdrop{value: sum}(keyIds, amounts);
-        // do something with the wallets
+        for (uint i; i < NUM_ADDRESS_AIRDROP_FILES; i++) {
+            (address[] memory addresses, uint256[] memory amounts, uint256 sum) = _getAddressAirdropBatch(i);
+            airdropper.airdropToAddresses{value: sum}(addresses, amounts);
+        }
 
-        // vm.stopBroadcast();
+        vm.stopBroadcast();
     }
 }
