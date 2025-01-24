@@ -45,7 +45,7 @@ contract GPGWalletTest is Test {
     function testDeploymentGas() public {
         bytes8 keyId = bytes8(0x1234567890abcdef);
         uint256 gasBefore = gasleft();
-        address wallet = deployer.deploy(keyId);
+        deployer.deploy(keyId);
         console.log(gasBefore - gasleft());
     }
 

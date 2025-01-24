@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { Script, console } from "forge-std/Script.sol";
 
-contract VerifyL1DataGas is Script {
+contract SendL2Tx is Script {
     address immutable EOA = makeAddr("eoa");
 
     function run() external {

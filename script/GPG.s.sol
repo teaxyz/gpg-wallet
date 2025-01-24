@@ -15,7 +15,6 @@ contract GPGScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        bytes32 structHash = WALLET.getAddSignerStructHash(EOA, 0, 0, bytes32(0));
         WALLET.addSigner(EOA, 0, 0, bytes32(0), PUBKEY, SIGNATURE);
 
         console.log("Is EOA now signer?");

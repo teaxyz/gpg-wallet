@@ -20,7 +20,7 @@ contract AirdropScript is Script, AirdropDecoding {
         // @todo error handling, logging, etc
         for (uint i; i < NUM_KEYID_AIRDROP_FILES; i++) {
             (bytes8[] memory keyIds, uint256[] memory amounts, uint256 sum) = _getKeyIDAirdropBatch(i);
-            address[] memory wallets = airdropper.airdropToKeyIds{value: sum}(keyIds, amounts);
+            address[] memory wallets = AIRDROPPER.airdropToKeyIds{value: sum}(keyIds, amounts);
             for (uint j; j < wallets.length; j++) {
                 if (keyIds[j] == bytes8(0x49CEB217B43F2378)) {
                     console.log("ADDRESS TO SAVE");
@@ -31,7 +31,7 @@ contract AirdropScript is Script, AirdropDecoding {
 
         for (uint i; i < NUM_ADDRESS_AIRDROP_FILES; i++) {
             (address[] memory addresses, uint256[] memory amounts, uint256 sum) = _getAddressAirdropBatch(i);
-            airdropper.airdropToAddresses{value: sum}(addresses, amounts);
+            AIRDROPPER.airdropToAddresses{value: sum}(addresses, amounts);
         }
 
         vm.stopBroadcast();
