@@ -21,10 +21,9 @@ contract AirdropScript is Script, AirdropDecoding {
             (bytes8[] memory keyIds, uint256[] memory amounts, uint256 sum) = _getKeyIDAirdropBatch(i);
             address[] memory wallets = AIRDROPPER.airdropToKeyIds{value: sum}(keyIds, amounts);
             for (uint256 j; j < wallets.length; j++) {
-                if (keyIds[j] == bytes8(0x49CEB217B43F2378)) {
-                    console.log("ADDRESS TO SAVE");
-                    console.log(wallets[j]);
-                }
+                console.log("WALLET DEPLOYED: ", wallets[j]);
+                console.log("KEYID: ", keyIds[j]);
+                console.log("********");
             }
         }
 
