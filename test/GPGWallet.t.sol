@@ -4,13 +4,13 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 import {GPGWalletDeployer} from "src/GPGWalletDeployer.sol";
 import {GPGWallet} from "src/GPGWalletImpl.sol";
-// import { Airdropper } from "src/Airdropper.sol";
+import {MockGPGVerifier} from "./MockGPGVerifier.sol";
 
 contract GPGWalletTest is Test {
     GPGWalletDeployer deployer;
     GPGWallet impl;
-    // Airdropper airdropper;
     address EOA = makeAddr("eoa");
+    bytes8 KEY_ID = bytes8(0x1234567890abcdef);
 
     event GPGWalletDeployed(address wallet, uint256 amount);
     event FundsTransferred(address wallet, uint256 amount);
@@ -18,7 +18,9 @@ contract GPGWalletTest is Test {
     function setUp() public {
         impl = new GPGWallet();
         deployer = new GPGWalletDeployer(address(impl));
-        // airdropper = new Airdropper(deployer);
+
+        address mockVerifier = address(new MockGPGVerifier());
+        vm.etch(address(0x696), mockVerifier.code);
     }
 
     function testDeployment(bytes8 keyId, uint256 value) public {
@@ -52,14 +54,13 @@ contract GPGWalletTest is Test {
     }
 
     function testRedeployFails() public {
-        bytes8 keyId = bytes8(0x1234567890abcdef);
         uint256 amount = 100;
 
-        address wallet = deployer.deploy(keyId);
+        address wallet = deployer.deploy(KEY_ID);
         assertEq(wallet.balance, 0);
 
         vm.expectRevert(bytes4(0x340630c7));
-        deployer.deploy{value: amount}(keyId);
+        deployer.deploy{value: amount}(KEY_ID);
     }
 
     function testReadKeyId(bytes8 keyId) public {
@@ -69,7 +70,7 @@ contract GPGWalletTest is Test {
     }
 
     function testReceive() public {
-        address walletAddr = deployer.deploy(bytes8(0));
+        address walletAddr = deployer.deploy(KEY_ID);
         (bool success,) = walletAddr.call{value: 1}("");
         require(success);
     }
@@ -106,11 +107,43 @@ contract GPGWalletTest is Test {
         // console.logBytes(abi.encode(structHash, ED_KEY_ID, ED_KEY, signedED));
     }
 
-    // withdraw all with gpg key
+    function testAddSignerAndExecute() public {
+        GPGWallet wallet = GPGWallet(payable(deployer.deploy(KEY_ID)));
+        wallet.addSigner(EOA, 0, 0, bytes32(0), "", "");
+        assertEq(wallet.signers(EOA), true);
 
-    // execute with gpg sig
+        vm.deal(address(wallet), 100e18);
+        assertEq(address(wallet).balance, 100e18);
 
-    // execute with ecdsa
+        vm.prank(EOA);
+        wallet.executeBySigner(EOA, 100e18, "");
 
-    // execute with eoa
+        assertEq(address(wallet).balance, 0);
+        assertEq(EOA.balance, 100e18);
+    }
+
+    function testWithdrawAll() public {
+        GPGWallet wallet = GPGWallet(payable(deployer.deploy(KEY_ID)));
+
+        vm.deal(address(wallet), 100e18);
+        assertEq(address(wallet).balance, 100e18);
+
+        wallet.withdrawAll(EOA, 0, 0, bytes32(0), "", "");
+
+
+        assertEq(address(wallet).balance, 0);
+        assertEq(EOA.balance, 100e18);
+    }
+
+    function testExecutWithGPG() public {
+        GPGWallet wallet = GPGWallet(payable(deployer.deploy(KEY_ID)));
+
+        vm.deal(address(wallet), 100e18);
+        assertEq(address(wallet).balance, 100e18);
+
+        wallet.executeWithSig(EOA, 100e18, "", 0, 0, bytes32(0), "", "", true);
+
+        assertEq(address(wallet).balance, 0);
+        assertEq(EOA.balance, 100e18);
+    }
 }
