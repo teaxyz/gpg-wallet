@@ -34,13 +34,6 @@ contract GPGWalletTest is Test {
         assert(wallet.code.length > 0);
     }
 
-    function testDeploymentGas() public {
-        bytes8 keyId = bytes8(0x1234567890abcdef);
-        uint256 gasBefore = gasleft();
-        deployer.deploy(keyId);
-        console.log(gasBefore - gasleft());
-    }
-
     function testPredictAddress(bytes8 keyId) public {
         (address predictedBefore, bool deployedBefore) = deployer.predictAddress(keyId);
         address wallet = deployer.deploy(keyId);
@@ -77,7 +70,7 @@ contract GPGWalletTest is Test {
 
     function testAddSignerAndExecute() public {
         GPGWallet wallet = GPGWallet(payable(deployer.deploy(KEY_ID)));
-        wallet.addSigner(EOA, 0, 0, bytes32(0), "", "");
+        wallet.addSigner(EOA, 0, 0, "", "");
         assertEq(wallet.signers(EOA), true);
 
         vm.deal(address(wallet), 100e18);
@@ -96,7 +89,7 @@ contract GPGWalletTest is Test {
         vm.deal(address(wallet), 100e18);
         assertEq(address(wallet).balance, 100e18);
 
-        wallet.withdrawAll(EOA, 0, 0, bytes32(0), "", "");
+        wallet.withdrawAll(EOA, 0, 0, "", "");
 
         assertEq(address(wallet).balance, 0);
         assertEq(EOA.balance, 100e18);
@@ -108,7 +101,7 @@ contract GPGWalletTest is Test {
         vm.deal(address(wallet), 100e18);
         assertEq(address(wallet).balance, 100e18);
 
-        wallet.executeWithSig(EOA, 100e18, "", 0, 0, bytes32(0), "", "", true);
+        wallet.executeWithSig(EOA, 100e18, "", 0, 0, "", "", true);
 
         assertEq(address(wallet).balance, 0);
         assertEq(EOA.balance, 100e18);

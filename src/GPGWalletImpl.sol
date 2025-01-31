@@ -21,6 +21,9 @@ contract GPGWallet is EIP712 {
     /// @notice Mapping to track used message digests
     mapping(bytes32 => bool) public usedDigests;
 
+    /// @notice Used to ensure uniqueness and ordering of executed messages
+    uint256 public nonce;
+
     ////////////////////////////////////
     //          CONSTRUCTOR           //
     ////////////////////////////////////
@@ -37,19 +40,17 @@ contract GPGWallet is EIP712 {
     /// @param signer Address of the new signer to add
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
-    /// @param salt Random value to ensure uniqueness of the message
     /// @param signature GPG signature of the typed data
     function addSigner(
         address signer,
         uint256 paymasterFee,
         uint256 deadline,
-        bytes32 salt,
         bytes memory pubKey,
         bytes memory signature
     ) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, salt);
+        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nonce++);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -64,19 +65,17 @@ contract GPGWallet is EIP712 {
     /// @param to Address to send the funds to
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
-    /// @param salt Random value to ensure uniqueness of the message
     /// @param signature GPG signature of the typed data
     function withdrawAll(
         address to,
         uint256 paymasterFee,
         uint256 deadline,
-        bytes32 salt,
         bytes memory pubKey,
         bytes memory signature
     ) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, salt);
+        bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nonce++);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -94,6 +93,8 @@ contract GPGWallet is EIP712 {
     /// @return data Return data from the executed call
     function executeBySigner(address to, uint256 value, bytes memory data) public returns (bytes memory) {
         require(signers[msg.sender], "GPGWallet: not a signer");
+        nonce++;
+
         return _executeCall(to, value, data);
     }
 
@@ -103,7 +104,6 @@ contract GPGWallet is EIP712 {
     /// @param data Calldata for the transaction
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
-    /// @param salt Random value to ensure uniqueness of the message
     /// @param signature The signature (either GPG or ECDSA)
     /// @param gpg Boolean indicating if the signature is GPG (true) or ECDSA (false)
     /// @return data Return data from the executed call
@@ -113,14 +113,13 @@ contract GPGWallet is EIP712 {
         bytes memory data,
         uint256 paymasterFee,
         uint256 deadline,
-        bytes32 salt,
         bytes memory pubKey,
         bytes memory signature,
         bool gpg
     ) public returns (bytes memory) {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, salt);
+        bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nonce++);
         require(!usedDigests[digest], "GPGWallet: digest already used");
         usedDigests[digest] = true;
 
@@ -193,7 +192,7 @@ contract GPGWallet is EIP712 {
                 // Update the free memory pointer
                 mstore(0x40, add(ptr, 0x20))
                 // Copy the code to the pointer
-                extcodecopy(address(), ptr, 0x2e, 0x08)
+                extcodecopy(address(), ptr, 0x2d, 0x20)
                 // Load result into the bytes8 variable
                 keyIdFromCode := mload(ptr)
             }
@@ -205,30 +204,30 @@ contract GPGWallet is EIP712 {
     /// @param signer Address of the signer to add
     /// @param paymasterFee Fee to be paid to the paymaster
     /// @param deadline Timestamp after which the signature is invalid
-    /// @param salt Random value to ensure uniqueness
+    /// @param nonce The wallet's nonce to ensure uniqueness and transaction ordering
     /// @return bytes32 The computed struct hash
-    function getAddSignerStructHash(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt)
+    function getAddSignerStructHash(address signer, uint256 paymasterFee, uint256 deadline, uint256 nonce)
         public
         view
         returns (bytes32)
     {
-        bytes32 typehash = keccak256("AddSigner(address signer, uint256 paymasterFee, uint256 deadline, bytes32 salt)");
-        return _hashTypedDataV4(keccak256(abi.encode(typehash, signer, paymasterFee, deadline, salt)));
+        bytes32 typehash = keccak256("AddSigner(address signer,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
+        return _hashTypedDataV4(keccak256(abi.encode(typehash, signer, paymasterFee, deadline, nonce)));
     }
 
     /// @notice Computes the struct hash for withdrawing all funds
     /// @param to Address to withdraw to
     /// @param paymasterFee Fee to be paid to the paymaster
     /// @param deadline Timestamp after which the signature is invalid
-    /// @param salt Random value to ensure uniqueness
+    /// @param nonce The wallet's nonce to ensure uniqueness and transaction ordering
     /// @return bytes32 The computed struct hash
-    function getWithdrawAllStructHash(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt)
+    function getWithdrawAllStructHash(address to, uint256 paymasterFee, uint256 deadline, uint256 nonce)
         public
         view
         returns (bytes32)
     {
-        bytes32 typehash = keccak256("WithdrawAll(address to, uint256 paymasterFee, uint256 deadline, bytes32 salt)");
-        return _hashTypedDataV4(keccak256(abi.encode(typehash, to, paymasterFee, deadline, salt)));
+        bytes32 typehash = keccak256("WithdrawAll(address to,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
+        return _hashTypedDataV4(keccak256(abi.encode(typehash, to, paymasterFee, deadline, nonce)));
     }
 
     /// @notice Computes the struct hash for executing a transaction
@@ -237,7 +236,7 @@ contract GPGWallet is EIP712 {
     /// @param data Calldata for the transaction
     /// @param paymasterFee Fee to be paid to the paymaster
     /// @param deadline Timestamp after which the signature is invalid
-    /// @param salt Random value to ensure uniqueness
+    /// @param nonce The wallet's nonce to ensure uniqueness and transaction ordering
     /// @return bytes32 The computed struct hash
     function getExecuteStructHash(
         address to,
@@ -245,12 +244,12 @@ contract GPGWallet is EIP712 {
         bytes memory data,
         uint256 paymasterFee,
         uint256 deadline,
-        bytes32 salt
+        uint256 nonce
     ) public view returns (bytes32) {
         bytes32 typehash = keccak256(
-            "Execute(address to, uint256 value, bytes data, uint256 paymasterFee, uint256 deadline, bytes32 salt)"
+            "Execute(address to,uint256 value,bytes data,uint256 paymasterFee,uint256 deadline,uint256 nonce)"
         );
         return
-            _hashTypedDataV4(keccak256(abi.encode(typehash, to, value, keccak256(data), paymasterFee, deadline, salt)));
+            _hashTypedDataV4(keccak256(abi.encode(typehash, to, value, keccak256(data), paymasterFee, deadline, nonce)));
     }
 }

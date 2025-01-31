@@ -43,7 +43,8 @@ contract Airdropper {
         require(len == amounts.length, "Airdropper: addresses and amounts length mismatch");
 
         for (uint256 i = 0; i < len; i++) {
-            payable(addrs[i]).transfer(amounts[i]);
+            (bool success,) = addrs[i].call{value: amounts[i]}("");
+            require(success);
             emit AirdropToAddress(addrs[i], amounts[i]);
         }
     }
