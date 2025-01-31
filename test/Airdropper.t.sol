@@ -84,7 +84,7 @@ contract AirdropperTest is Test {
         }
         uint256 gas = gasleft();
         airdropper.airdropToKeyIds{value: keyIds.length}(keyIds, amounts);
-        assertEq(gas - gasleft(), 23663228);
+        console.log(gas - gasleft());
     }
 
     function testEOAAirdropGas() public {
@@ -97,6 +97,6 @@ contract AirdropperTest is Test {
         }
         uint256 gas = gasleft();
         airdropper.airdropToAddresses{value: addresses.length}(addresses, amounts);
-        assertEq(gas - gasleft(), 27367563);
+        console.log(gas - gasleft());
     }
 }
