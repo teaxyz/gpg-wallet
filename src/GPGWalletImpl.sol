@@ -19,7 +19,7 @@ contract GPGWallet is EIP712 {
     mapping(address => bool) public signers;
 
     /// @notice Used to ensure uniqueness and ordering of executed messages
-    uint256 public nonce;
+    uint256 public nextNonce;
 
     ////////////////////////////////////
     //          CONSTRUCTOR           //
@@ -47,7 +47,7 @@ contract GPGWallet is EIP712 {
     ) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nonce++);
+        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nextNonce++);
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
         if (paymasterFee > 0) _payPaymaster(paymasterFee);
@@ -69,7 +69,7 @@ contract GPGWallet is EIP712 {
     ) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nonce++);
+        bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nextNonce++);
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
         if (paymasterFee > 0) _payPaymaster(paymasterFee);
@@ -84,7 +84,7 @@ contract GPGWallet is EIP712 {
     /// @return data Return data from the executed call
     function executeBySigner(address to, uint256 value, bytes memory data) public returns (bytes memory) {
         require(signers[msg.sender], "GPGWallet: not a signer");
-        nonce++;
+        nextNonce++;
 
         return _executeCall(to, value, data);
     }
@@ -110,7 +110,7 @@ contract GPGWallet is EIP712 {
     ) public returns (bytes memory) {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
-        bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nonce++);
+        bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nextNonce++);
 
         if (gpg) {
             require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid gpg signature");
