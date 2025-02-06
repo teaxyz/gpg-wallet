@@ -18,9 +18,6 @@ contract GPGWallet is EIP712 {
     /// @dev This mapping consists of Ethereum addresses that can sign, in addition to the GPG public key
     mapping(address => bool) public signers;
 
-    /// @notice Mapping to track used message digests
-    mapping(bytes32 => bool) public usedDigests;
-
     /// @notice Used to ensure uniqueness and ordering of executed messages
     uint256 public nonce;
 
@@ -51,9 +48,6 @@ contract GPGWallet is EIP712 {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
         bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nonce++);
-        require(!usedDigests[digest], "GPGWallet: digest already used");
-        usedDigests[digest] = true;
-
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
         if (paymasterFee > 0) _payPaymaster(paymasterFee);
@@ -76,9 +70,6 @@ contract GPGWallet is EIP712 {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
         bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nonce++);
-        require(!usedDigests[digest], "GPGWallet: digest already used");
-        usedDigests[digest] = true;
-
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
         if (paymasterFee > 0) _payPaymaster(paymasterFee);
@@ -120,8 +111,6 @@ contract GPGWallet is EIP712 {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
         bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nonce++);
-        require(!usedDigests[digest], "GPGWallet: digest already used");
-        usedDigests[digest] = true;
 
         if (gpg) {
             require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid gpg signature");

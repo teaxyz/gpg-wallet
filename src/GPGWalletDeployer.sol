@@ -27,7 +27,7 @@ contract GPGWalletDeployer {
             // 0x8C   keyID (bytes8)                 (8 bytes)
 
             let ptr := mload(0x40)
-            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x54 // includes constructor code
+            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x55 // includes constructor code
 
             mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
             mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
@@ -51,8 +51,8 @@ contract GPGWalletDeployer {
             let deployedAddress := create2(callvalue(), add(ptr, 0x55), bytecodeLength, 0)
 
             if iszero(eq(deployedAddress, walletAddress)) {
-                mstore8(0x88, 0x705f331c1) // `AccountCreationFailed(bytes8)`
-                revert(0x88, 0xc) // keyId is already at 0x8C
+                mstore(add(ptr, 0x6c), 0x705f331c) // `AccountCreationFailed(bytes8)`
+                revert(add(ptr, 0x88), 0xc) // keyId is already at 0x8C
             }
 
             mstore(add(ptr, 0x95), walletAddress)
@@ -70,7 +70,7 @@ contract GPGWalletDeployer {
     {
         assembly {
             let ptr := mload(0x40)
-            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x54 // includes constructor code
+            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x55 // includes constructor code
 
             mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
             mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
