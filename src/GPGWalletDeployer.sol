@@ -5,8 +5,8 @@ pragma solidity ^0.8.20;
 contract GPGWalletDeployer {
     address public implementation;
 
-    // cast keccak "GPGWalletDeployed(address,uint256)
-    bytes32 constant WALLET_DEPLOYED_EVENT = 0xf934bdb517e8b19d76877e2539a250338b642109c704f9b5a12af67cc82c8e24;
+    // cast keccak "GPGWalletDeployed(address,uint256)"
+    bytes32 private constant WALLET_DEPLOYED_EVENT = 0xf934bdb517e8b19d76877e2539a250338b642109c704f9b5a12af67cc82c8e24;
 
     constructor(address _implementation) {
         implementation = _implementation;
@@ -24,34 +24,35 @@ contract GPGWalletDeployer {
             // 0x55   ERC-1167 Constructor + Header  (20 bytes)
             // 0x69   implementation (address)       (20 bytes)
             // 0x7D   ERC-1167 Footer                (15 bytes)
-            // 0x8D   keyID (bytes8)                 (8 bytes)
+            // 0x8C   keyID (bytes8)                 (8 bytes)
 
             let ptr := mload(0x40)
-            let bytecodeLength := 0x40 // 0x8D + 0x08 - 0x55
+            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x55 // includes constructor code
 
             mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
             mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
-            mstore(add(ptr, 0x49), 0x3d603f80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
-            calldatacopy(add(ptr, 0x8d), 0x04, 0x20)
+            mstore(add(ptr, 0x49), 0x3d603580600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            calldatacopy(add(ptr, 0x8c), 0x04, 0x20)
 
             // Copy create2 computation data to memory
             mstore8(ptr, 0xff) // 0xFF
-            mstore(add(ptr, 0x35), keccak256(add(ptr, 0x55), bytecodeLength)) // keccak256(bytecode)
             mstore(add(ptr, 0x01), shl(96, address())) // deployer address
+            mstore(add(ptr, 0x15), 0) // store salt = 0 in case of dirty bytes
+            mstore(add(ptr, 0x35), keccak256(add(ptr, 0x55), bytecodeLength)) // keccak256(bytecode)
 
             // Compute account address & check for existing code
             walletAddress := shr(96, shl(96, keccak256(ptr, 0x55)))
 
-            if iszero(iszero(extcodesize(walletAddress))) {
+            if extcodesize(walletAddress) {
                 mstore(0x00, 0x340630c7) // `WalletAlreadyDeployed()`.
                 revert(0x1c, 0x04)
             }
 
             let deployedAddress := create2(callvalue(), add(ptr, 0x55), bytecodeLength, 0)
 
-            if iszero(eq(deployedAddress, walletAddress)) {
-                mstore(0x89, 0x705f331c1) // `AccountCreationFailed(bytes8)`
-                revert(0x89, 0xc) // keyId is already at 0x8D
+            if xor(deployedAddress, walletAddress) {
+                mstore(add(ptr, 0x6c), 0x705f331c) // `AccountCreationFailed(bytes8)`
+                revert(add(ptr, 0x88), 0xc) // keyId is already at 0x8C
             }
 
             mstore(add(ptr, 0x95), walletAddress)
@@ -62,24 +63,21 @@ contract GPGWalletDeployer {
         return walletAddress;
     }
 
-    function predictAddress(bytes8 /* gpgPublicKey */ )
-        external
-        view
-        returns (address walletAddress, bool isDeployed)
-    {
+    function predictAddress(bytes8 /* keyId */ ) external view returns (address walletAddress, bool isDeployed) {
         assembly {
             let ptr := mload(0x40)
-            let bytecodeLength := 0x40 // 0x8D + 0x08 - 0x55
+            let bytecodeLength := 0x3f // 0x8C + 0x08 - 0x55 // includes constructor code
 
             mstore(add(ptr, 0x6c), 0x5af43d82803e903d91602b57fd5bf3) // ERC-1167 footer
             mstore(add(ptr, 0x5d), sload(implementation.slot)) // implementation
-            mstore(add(ptr, 0x49), 0x3d603f80600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
-            calldatacopy(add(ptr, 0x8d), 0x04, 0x20)
+            mstore(add(ptr, 0x49), 0x3d603580600a3d3981f3363d3d373d3d3d363d73) // ERC-1167 constructor + header
+            calldatacopy(add(ptr, 0x8c), 0x04, 0x20)
 
             // Copy create2 computation data to memory
             mstore8(ptr, 0xff) // 0xFF
-            mstore(add(ptr, 0x35), keccak256(add(ptr, 0x55), bytecodeLength)) // keccak256(bytecode)
             mstore(add(ptr, 0x01), shl(96, address())) // deployer address
+            mstore(add(ptr, 0x15), 0) // store salt = 0 in case of dirty bytes
+            mstore(add(ptr, 0x35), keccak256(add(ptr, 0x55), bytecodeLength)) // keccak256(bytecode)
 
             // Compute account address & check for existing code
             walletAddress := shr(96, shl(96, keccak256(ptr, 0x55)))
