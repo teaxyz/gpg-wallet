@@ -8,7 +8,19 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 /// @notice A smart contract wallet that supports both GPG and ECDSA signatures for transaction execution
 contract GPGWallet is EIP712 {
     /// @dev Address of the GPG signature verification precompile
-    address constant GPG_VERIFIER = address(0x696);
+    address public constant GPG_VERIFIER = address(0x696);
+
+    /// @dev EIP712 typehash for adding a signer
+    bytes32 public constant ADD_SIGNER_TYPEHASH =
+        keccak256("AddSigner(address signer,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
+
+    /// @dev EIP712 typehash for withdrawing all funds
+    bytes32 public constant WITHDRAW_ALL_TYPEHASH =
+        keccak256("WithdrawAll(address to,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
+
+    /// @dev EIP712 typehash for executing a transaction
+    bytes32 public constant EXECUTE_TYPEHASH =
+        keccak256("Execute(address to,uint256 value,bytes data,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
 
     /// @notice Address of the implementation contract
     /// @dev This is used in `publicKey()` to determine if calls are from a proxy
@@ -37,6 +49,7 @@ contract GPGWallet is EIP712 {
     /// @param signer Address of the new signer to add
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
+    /// @param pubKey GPG public key of the signer
     /// @param signature GPG signature of the typed data
     function addSigner(
         address signer,
@@ -46,19 +59,21 @@ contract GPGWallet is EIP712 {
         bytes memory signature
     ) public {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
+        require(!signers[signer], "GPGWallet: signer already exists");
 
         bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nextNonce++);
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
-        if (paymasterFee > 0) _payPaymaster(paymasterFee);
-
         signers[signer] = true;
+
+        if (paymasterFee > 0) _payPaymaster(paymasterFee);
     }
 
     /// @notice Withdraws all funds from the wallet to a specified address
     /// @param to Address to send the funds to
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
+    /// @param pubKey GPG public key of the signer
     /// @param signature GPG signature of the typed data
     function withdrawAll(
         address to,
@@ -72,9 +87,9 @@ contract GPGWallet is EIP712 {
         bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nextNonce++);
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
 
-        if (paymasterFee > 0) _payPaymaster(paymasterFee);
-
         _executeCall(to, address(this).balance, "");
+
+        if (paymasterFee > 0) _payPaymaster(paymasterFee);
     }
 
     /// @notice Executes a transaction if called by an authorized signer
@@ -95,9 +110,10 @@ contract GPGWallet is EIP712 {
     /// @param data Calldata for the transaction
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
+    /// @param pubKey GPG public key of the signer
     /// @param signature The signature (either GPG or ECDSA)
     /// @param gpg Boolean indicating if the signature is GPG (true) or ECDSA (false)
-    /// @return data Return data from the executed call
+    /// @return returndata data Return data from the executed call
     function executeWithSig(
         address to,
         uint256 value,
@@ -107,7 +123,7 @@ contract GPGWallet is EIP712 {
         bytes memory pubKey,
         bytes memory signature,
         bool gpg
-    ) public returns (bytes memory) {
+    ) public returns (bytes memory returndata) {
         require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
 
         bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nextNonce++);
@@ -118,9 +134,9 @@ contract GPGWallet is EIP712 {
             require(signers[ECDSA.recover(digest, signature)], "GPGWallet: invalid ecdsa signature");
         }
 
-        if (paymasterFee > 0) _payPaymaster(paymasterFee);
+        returndata = _executeCall(to, value, data);
 
-        return _executeCall(to, value, data);
+        if (paymasterFee > 0) _payPaymaster(paymasterFee);
     }
 
     /// @notice Fallback function to receive ETH
@@ -173,20 +189,20 @@ contract GPGWallet is EIP712 {
     function keyId() public view returns (bytes8) {
         if (address(this) == implementation) {
             revert("GPGWallet: implementation contract does not have a public key");
-        } else {
-            bytes8 keyIdFromCode;
-            assembly {
-                // Allocate memory for the bytes8
-                let ptr := mload(0x40) // Get free memory pointer
-                // Update the free memory pointer
-                mstore(0x40, add(ptr, 0x20))
-                // Copy the code to the pointer
-                extcodecopy(address(), ptr, 0x2d, 0x20)
-                // Load result into the bytes8 variable
-                keyIdFromCode := mload(ptr)
-            }
-            return keyIdFromCode;
         }
+
+        bytes8 keyIdFromCode;
+        assembly {
+            // Allocate memory for the bytes8
+            let ptr := mload(0x40) // Get free memory pointer
+            // Update the free memory pointer
+            mstore(0x40, add(ptr, 0x20))
+            // Copy the code to the pointer
+            extcodecopy(address(), ptr, 0x2d, 0x20)
+            // Load result into the bytes8 variable
+            keyIdFromCode := mload(ptr)
+        }
+        return keyIdFromCode;
     }
 
     /// @notice Computes the struct hash for adding a signer
@@ -200,8 +216,7 @@ contract GPGWallet is EIP712 {
         view
         returns (bytes32)
     {
-        bytes32 typehash = keccak256("AddSigner(address signer,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
-        return _hashTypedDataV4(keccak256(abi.encode(typehash, signer, paymasterFee, deadline, nonce)));
+        return _hashTypedDataV4(keccak256(abi.encode(ADD_SIGNER_TYPEHASH, signer, paymasterFee, deadline, nonce)));
     }
 
     /// @notice Computes the struct hash for withdrawing all funds
@@ -215,8 +230,7 @@ contract GPGWallet is EIP712 {
         view
         returns (bytes32)
     {
-        bytes32 typehash = keccak256("WithdrawAll(address to,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
-        return _hashTypedDataV4(keccak256(abi.encode(typehash, to, paymasterFee, deadline, nonce)));
+        return _hashTypedDataV4(keccak256(abi.encode(WITHDRAW_ALL_TYPEHASH, to, paymasterFee, deadline, nonce)));
     }
 
     /// @notice Computes the struct hash for executing a transaction
@@ -235,10 +249,8 @@ contract GPGWallet is EIP712 {
         uint256 deadline,
         uint256 nonce
     ) public view returns (bytes32) {
-        bytes32 typehash = keccak256(
-            "Execute(address to,uint256 value,bytes data,uint256 paymasterFee,uint256 deadline,uint256 nonce)"
+        return _hashTypedDataV4(
+            keccak256(abi.encode(EXECUTE_TYPEHASH, to, value, keccak256(data), paymasterFee, deadline, nonce))
         );
-        return
-            _hashTypedDataV4(keccak256(abi.encode(typehash, to, value, keccak256(data), paymasterFee, deadline, nonce)));
     }
 }

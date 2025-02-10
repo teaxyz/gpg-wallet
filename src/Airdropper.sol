@@ -14,7 +14,7 @@ contract Airdropper {
     }
 
     function airdropToKeyIds(bytes8[] memory keyIds, uint256[] memory amounts)
-        public
+        external
         payable
         returns (address[] memory wallets)
     {
@@ -22,8 +22,10 @@ contract Airdropper {
         require(len == amounts.length, "Airdropper: keys and amounts length mismatch");
 
         wallets = new address[](len);
+        uint256 sum;
         for (uint256 i = 0; i < len; i++) {
             (address deployedAddr, bool isDeployed) = deployer.predictAddress(keyIds[i]);
+            sum += amounts[i];
             if (!isDeployed) {
                 wallets[i] = deployer.deploy{value: amounts[i]}(keyIds[i]);
                 emit AirdropToKeyID(keyIds[i], wallets[i], amounts[i], true);
@@ -35,10 +37,15 @@ contract Airdropper {
             }
         }
 
+        if (msg.value > sum) {
+            (bool success,) = msg.sender.call{value: msg.value - sum}("");
+            require(success);
+        }
+
         return wallets;
     }
 
-    function airdropToAddresses(address[] memory addrs, uint256[] memory amounts) public payable {
+    function airdropToAddresses(address[] memory addrs, uint256[] memory amounts) external payable {
         uint256 len = addrs.length;
         require(len == amounts.length, "Airdropper: addresses and amounts length mismatch");
 
