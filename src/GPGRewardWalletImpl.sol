@@ -7,6 +7,7 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 /// @notice A smart contract wallet that supports GPG signatures for transaction execution
 contract GPGRewardWallet is EIP712 {
     error DeadmanSwitchAlreadyTriggered();
+    error DeadmanSwitchNotTriggered();
 
     /// @dev Address of the GPG signature verification precompile
     address public constant GPG_VERIFIER = address(0x696);
@@ -26,6 +27,9 @@ contract GPGRewardWallet is EIP712 {
     /// @notice Date after which the wallet will be considered inactive and recoverable by admin
     uint256 public immutable deadmanSwitchDate;
 
+    /// @notice Address of the admin who can recover the wallet after the deadman switch date
+    address payable public immutable admin;
+
     /// @notice Used to ensure uniqueness and ordering of executed messages
     uint256 public nextNonce;
 
@@ -33,14 +37,25 @@ contract GPGRewardWallet is EIP712 {
     //          CONSTRUCTOR           //
     ////////////////////////////////////
 
-    constructor() EIP712("GPGRewardWallet", "1") {
+    constructor(address _admin) EIP712("GPGRewardWallet", "1") {
         implementation = address(this);
         deadmanSwitchDate = block.timestamp + 3 years;
+        admin = _admin;
     }
 
     ////////////////////////////////////
     //            EXTERNAL            //
     ////////////////////////////////////
+
+    function recoverPostDeadmanSwitch() external returns (uint256 amount) {
+        if (deadmanSwitchDate >= block.timestamp) {
+            revert DeadmanSwitchNotTriggered();
+        }
+
+        uint256 amount = address(this).balance;
+        (bool success,) = admin.call{value: amount}("");
+        require(success, "GPGRewardWallet: execution failed");
+    }
 
     /// @notice Withdraws all funds from the wallet to a specified address
     /// @param to Address to send the funds to
