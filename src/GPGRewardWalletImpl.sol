@@ -2,17 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title GPGRewardWallet
-/// @notice A smart contract wallet that supports both GPG and ECDSA signatures for transaction execution
+/// @notice A smart contract wallet that supports GPG signatures for transaction execution
 contract GPGRewardWallet is EIP712 {
     /// @dev Address of the GPG signature verification precompile
     address public constant GPG_VERIFIER = address(0x696);
-
-    /// @dev EIP712 typehash for adding a signer
-    bytes32 public constant ADD_SIGNER_TYPEHASH =
-        keccak256("AddSigner(address signer,uint256 paymasterFee,uint256 deadline,uint256 nonce)");
 
     /// @dev EIP712 typehash for withdrawing all funds
     bytes32 public constant WITHDRAW_ALL_TYPEHASH =
@@ -25,10 +20,6 @@ contract GPGRewardWallet is EIP712 {
     /// @notice Address of the implementation contract
     /// @dev This is used in `publicKey()` to determine if calls are from a proxy
     address public immutable implementation;
-
-    /// @notice Mapping of authorized signing addresses for the wallet
-    /// @dev This mapping consists of Ethereum addresses that can sign, in addition to the GPG public key
-    mapping(address => bool) public signers;
 
     /// @notice Used to ensure uniqueness and ordering of executed messages
     uint256 public nextNonce;
@@ -44,30 +35,6 @@ contract GPGRewardWallet is EIP712 {
     ////////////////////////////////////
     //            EXTERNAL            //
     ////////////////////////////////////
-
-    /// @notice Adds a new signer to the wallet using a GPG signature
-    /// @param signer Address of the new signer to add
-    /// @param paymasterFee Fee to be paid to the paymaster (if any)
-    /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
-    /// @param pubKey GPG public key of the signer
-    /// @param signature GPG signature of the typed data
-    function addSigner(
-        address signer,
-        uint256 paymasterFee,
-        uint256 deadline,
-        bytes memory pubKey,
-        bytes memory signature
-    ) public {
-        require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
-        require(!signers[signer], "GPGRewardWallet: signer already exists");
-
-        bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nextNonce++);
-        require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid signature");
-
-        signers[signer] = true;
-
-        if (paymasterFee > 0) _payPaymaster(paymasterFee);
-    }
 
     /// @notice Withdraws all funds from the wallet to a specified address
     /// @param to Address to send the funds to
@@ -92,27 +59,14 @@ contract GPGRewardWallet is EIP712 {
         if (paymasterFee > 0) _payPaymaster(paymasterFee);
     }
 
-    /// @notice Executes a transaction if called by an authorized signer
-    /// @param to Destination address for the transaction
-    /// @param value Amount of ETH to send
-    /// @param data Calldata for the transaction
-    /// @return data Return data from the executed call
-    function executeBySigner(address to, uint256 value, bytes memory data) public returns (bytes memory) {
-        require(signers[msg.sender], "GPGRewardWallet: not a signer");
-        nextNonce++;
-
-        return _executeCall(to, value, data);
-    }
-
-    /// @notice Executes a transaction with either a GPG or ECDSA signature
+    /// @notice Executes a transaction with either a GPG signature
     /// @param to Destination address for the transaction
     /// @param value Amount of ETH to send
     /// @param data Calldata for the transaction
     /// @param paymasterFee Fee to be paid to the paymaster (if any)
     /// @param deadline Timestamp after which the signature is no longer valid (0 for no deadline)
     /// @param pubKey GPG public key of the signer
-    /// @param signature The signature (either GPG or ECDSA)
-    /// @param gpg Boolean indicating if the signature is GPG (true) or ECDSA (false)
+    /// @param signature The GPG signature
     /// @return returndata data Return data from the executed call
     function executeWithSig(
         address to,
@@ -121,18 +75,13 @@ contract GPGRewardWallet is EIP712 {
         uint256 paymasterFee,
         uint256 deadline,
         bytes memory pubKey,
-        bytes memory signature,
-        bool gpg
+        bytes memory signature
     ) public returns (bytes memory returndata) {
         require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
 
         bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nextNonce++);
 
-        if (gpg) {
-            require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid gpg signature");
-        } else {
-            require(signers[ECDSA.recover(digest, signature)], "GPGRewardWallet: invalid ecdsa signature");
-        }
+        require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid gpg signature");
 
         returndata = _executeCall(to, value, data);
 
@@ -203,20 +152,6 @@ contract GPGRewardWallet is EIP712 {
             keyIdFromCode := mload(ptr)
         }
         return keyIdFromCode;
-    }
-
-    /// @notice Computes the struct hash for adding a signer
-    /// @param signer Address of the signer to add
-    /// @param paymasterFee Fee to be paid to the paymaster
-    /// @param deadline Timestamp after which the signature is invalid
-    /// @param nonce The wallet's nonce to ensure uniqueness and transaction ordering
-    /// @return bytes32 The computed struct hash
-    function getAddSignerStructHash(address signer, uint256 paymasterFee, uint256 deadline, uint256 nonce)
-        public
-        view
-        returns (bytes32)
-    {
-        return _hashTypedDataV4(keccak256(abi.encode(ADD_SIGNER_TYPEHASH, signer, paymasterFee, deadline, nonce)));
     }
 
     /// @notice Computes the struct hash for withdrawing all funds
