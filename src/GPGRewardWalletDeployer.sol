@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 /// Based on ERC6551Registry: https://github.com/erc6551/reference/blob/main/src/ERC6551Registry.sol
-contract GPGWalletDeployer {
+contract GPGRewardWalletDeployer {
     address public implementation;
 
-    // cast keccak "GPGWalletDeployed(address,uint256)"
-    bytes32 private constant WALLET_DEPLOYED_EVENT = 0xf934bdb517e8b19d76877e2539a250338b642109c704f9b5a12af67cc82c8e24;
+    // cast keccak "GPGRewardWalletDeployed(address,uint256)"
+    bytes32 private constant WALLET_DEPLOYED_EVENT = 0x0cf89844495d34d4dacdec49e5ff9375a03bee67c3a38b276b6b0dffffe9ae57;
 
     constructor(address _implementation) {
         implementation = _implementation;
@@ -57,7 +57,7 @@ contract GPGWalletDeployer {
 
             mstore(add(ptr, 0x95), walletAddress)
             mstore(add(ptr, 0xb5), callvalue())
-            log1(add(ptr, 0x95), 0x40, WALLET_DEPLOYED_EVENT) // `GPGWalletDeployed(address,uint256)`
+            log1(add(ptr, 0x95), 0x40, WALLET_DEPLOYED_EVENT) // `GPGRewardWalletDeployed(address,uint256)`
         }
 
         return walletAddress;

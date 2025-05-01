@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Airdropper} from "src/Airdropper.sol";
-import {GPGWalletDeployer} from "src/GPGWalletDeployer.sol";
+import {GPGRewardWalletDeployer} from "src/GPGRewardWalletDeployer.sol";
 import {AirdropDecoding} from "./AirdropDecoding.sol";
 import {DeployHelper} from "./DeployHelper.sol";
 

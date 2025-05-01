@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-/// @title GPGWallet
+/// @title GPGRewardWallet
 /// @notice A smart contract wallet that supports both GPG and ECDSA signatures for transaction execution
-contract GPGWallet is EIP712 {
+contract GPGRewardWallet is EIP712 {
     /// @dev Address of the GPG signature verification precompile
     address public constant GPG_VERIFIER = address(0x696);
 
@@ -37,7 +37,7 @@ contract GPGWallet is EIP712 {
     //          CONSTRUCTOR           //
     ////////////////////////////////////
 
-    constructor() EIP712("GPGWallet", "1") {
+    constructor() EIP712("GPGRewardWallet", "1") {
         implementation = address(this);
     }
 
@@ -58,11 +58,11 @@ contract GPGWallet is EIP712 {
         bytes memory pubKey,
         bytes memory signature
     ) public {
-        require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
-        require(!signers[signer], "GPGWallet: signer already exists");
+        require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
+        require(!signers[signer], "GPGRewardWallet: signer already exists");
 
         bytes32 digest = getAddSignerStructHash(signer, paymasterFee, deadline, nextNonce++);
-        require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
+        require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid signature");
 
         signers[signer] = true;
 
@@ -82,10 +82,10 @@ contract GPGWallet is EIP712 {
         bytes memory pubKey,
         bytes memory signature
     ) public {
-        require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
+        require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
 
         bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nextNonce++);
-        require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid signature");
+        require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid signature");
 
         _executeCall(to, address(this).balance, "");
 
@@ -98,7 +98,7 @@ contract GPGWallet is EIP712 {
     /// @param data Calldata for the transaction
     /// @return data Return data from the executed call
     function executeBySigner(address to, uint256 value, bytes memory data) public returns (bytes memory) {
-        require(signers[msg.sender], "GPGWallet: not a signer");
+        require(signers[msg.sender], "GPGRewardWallet: not a signer");
         nextNonce++;
 
         return _executeCall(to, value, data);
@@ -124,14 +124,14 @@ contract GPGWallet is EIP712 {
         bytes memory signature,
         bool gpg
     ) public returns (bytes memory returndata) {
-        require(deadline == 0 || deadline >= block.timestamp, "GPGWallet: deadline expired");
+        require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
 
         bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nextNonce++);
 
         if (gpg) {
-            require(_isValidGPGSignature(digest, pubKey, signature), "GPGWallet: invalid gpg signature");
+            require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid gpg signature");
         } else {
-            require(signers[ECDSA.recover(digest, signature)], "GPGWallet: invalid ecdsa signature");
+            require(signers[ECDSA.recover(digest, signature)], "GPGRewardWallet: invalid ecdsa signature");
         }
 
         returndata = _executeCall(to, value, data);
@@ -156,7 +156,7 @@ contract GPGWallet is EIP712 {
     {
         bytes memory data = abi.encode(digest, keyId(), pubKey, signature);
         (bool success, bytes memory returndata) = GPG_VERIFIER.staticcall(data);
-        require(success && returndata.length == 32, "GPGWallet: gpg precompile error");
+        require(success && returndata.length == 32, "GPGRewardWallet: gpg precompile error");
 
         return abi.decode(returndata, (bool));
     }
@@ -164,7 +164,7 @@ contract GPGWallet is EIP712 {
     /// @param amount Amount to pay the paymaster
     function _payPaymaster(uint256 amount) internal {
         (bool success,) = payable(msg.sender).call{value: amount}("");
-        require(success, "GPGWallet: paymaster payment failed");
+        require(success, "GPGRewardWallet: paymaster payment failed");
     }
 
     /// @param to Address to call
@@ -173,7 +173,7 @@ contract GPGWallet is EIP712 {
     /// @return returndata Data returned from the call
     function _executeCall(address to, uint256 value, bytes memory data) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = to.call{value: value}(data);
-        require(success, "GPGWallet: execution failed");
+        require(success, "GPGRewardWallet: execution failed");
         return returndata;
     }
 
@@ -188,7 +188,7 @@ contract GPGWallet is EIP712 {
     /// @return keyId The 8 byte Key ID associated with the wallet
     function keyId() public view returns (bytes8) {
         if (address(this) == implementation) {
-            revert("GPGWallet: implementation contract does not have a public key");
+            revert("GPGRewardWallet: implementation contract does not have a public key");
         }
 
         bytes8 keyIdFromCode;

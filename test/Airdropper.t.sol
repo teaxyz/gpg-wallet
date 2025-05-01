@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {GPGWalletDeployer} from "src/GPGWalletDeployer.sol";
-import {GPGWallet} from "src/GPGWalletImpl.sol";
+import {GPGRewardWalletDeployer} from "src/GPGRewardWalletDeployer.sol";
+import {GPGRewardWallet} from "src/GPGRewardWalletImpl.sol";
 import {Airdropper} from "src/Airdropper.sol";
 
 contract AirdropperTest is Test {
@@ -12,8 +12,8 @@ contract AirdropperTest is Test {
     mapping(bytes8 => uint256) keyIdToAmount;
 
     function setUp() public {
-        address impl = address(new GPGWallet());
-        GPGWalletDeployer deployer = new GPGWalletDeployer(impl);
+        address impl = address(new GPGRewardWallet());
+        GPGRewardWalletDeployer deployer = new GPGRewardWalletDeployer(impl);
         airdropper = new Airdropper(deployer);
     }
 

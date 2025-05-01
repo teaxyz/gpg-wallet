@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {GPGWalletDeployer} from "./GPGWalletDeployer.sol";
+import {GPGRewardWalletDeployer} from "./GPGRewardWalletDeployer.sol";
 
 contract Airdropper {
-    GPGWalletDeployer public immutable deployer;
+    GPGRewardWalletDeployer public immutable deployer;
 
     event AirdropToKeyID(bytes8 keyId, address wallet, uint256 amount, bool newDeployment);
     event AirdropToAddress(address wallet, uint256 amount);
 
-    constructor(GPGWalletDeployer _deployer) {
+    constructor(GPGRewardWalletDeployer _deployer) {
         deployer = _deployer;
     }
 
