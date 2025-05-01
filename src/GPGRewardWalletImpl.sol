@@ -6,6 +6,8 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 /// @title GPGRewardWallet
 /// @notice A smart contract wallet that supports GPG signatures for transaction execution
 contract GPGRewardWallet is EIP712 {
+    error DeadmanSwitchAlreadyTriggered();
+
     /// @dev Address of the GPG signature verification precompile
     address public constant GPG_VERIFIER = address(0x696);
 
@@ -21,6 +23,9 @@ contract GPGRewardWallet is EIP712 {
     /// @dev This is used in `publicKey()` to determine if calls are from a proxy
     address public immutable implementation;
 
+    /// @notice Date after which the wallet will be considered inactive and recoverable by admin
+    uint256 public immutable deadmanSwitchDate;
+
     /// @notice Used to ensure uniqueness and ordering of executed messages
     uint256 public nextNonce;
 
@@ -30,6 +35,7 @@ contract GPGRewardWallet is EIP712 {
 
     constructor() EIP712("GPGRewardWallet", "1") {
         implementation = address(this);
+        deadmanSwitchDate = block.timestamp + 3 years;
     }
 
     ////////////////////////////////////
@@ -49,6 +55,11 @@ contract GPGRewardWallet is EIP712 {
         bytes memory pubKey,
         bytes memory signature
     ) public {
+        if (deadmanSwitchDate < block.timestamp) {
+            // Tea cannot leave the wallet after deadmanSwitchDate
+            revert DeadmanSwitchAlreadyTriggered();
+        }
+
         require(deadline == 0 || deadline >= block.timestamp, "GPGRewardWallet: deadline expired");
 
         bytes32 digest = getWithdrawAllStructHash(to, paymasterFee, deadline, nextNonce++);
@@ -82,6 +93,12 @@ contract GPGRewardWallet is EIP712 {
         bytes32 digest = getExecuteStructHash(to, value, data, paymasterFee, deadline, nextNonce++);
 
         require(_isValidGPGSignature(digest, pubKey, signature), "GPGRewardWallet: invalid gpg signature");
+
+        // Allows for token transfers and other calls after the deadmanSwitchDate
+        if (deadmanSwitchDate < block.timestamp && (value > 0 || paymasterFee > 0)) {
+            // Tea cannot leave the wallet after deadmanSwitchDate
+            revert DeadmanSwitchAlreadyTriggered();
+        }
 
         returndata = _executeCall(to, value, data);
 
