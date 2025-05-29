@@ -8,7 +8,7 @@ import {GPGRewardWallet} from "src/GPGRewardWalletImpl.sol";
 
 contract DeployHelper {
     function _deployContracts(bool log) internal returns (address, GPGRewardWalletDeployer, Airdropper) {
-        address impl = address(new GPGRewardWallet());
+        address impl = address(new GPGRewardWallet(msg.sender));
         GPGRewardWalletDeployer deployer = new GPGRewardWalletDeployer(impl);
         Airdropper airdropper = new Airdropper(deployer);
 

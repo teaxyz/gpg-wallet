@@ -39,8 +39,8 @@ contract GPGRewardWallet is EIP712 {
 
     constructor(address _admin) EIP712("GPGRewardWallet", "1") {
         implementation = address(this);
-        deadmanSwitchDate = block.timestamp + 3 years;
-        admin = _admin;
+        deadmanSwitchDate = block.timestamp + 156 weeks; // 3 years
+        admin = payable(_admin);
     }
 
     ////////////////////////////////////
@@ -52,9 +52,10 @@ contract GPGRewardWallet is EIP712 {
             revert DeadmanSwitchNotTriggered();
         }
 
-        uint256 amount = address(this).balance;
-        (bool success,) = admin.call{value: amount}("");
+        uint256 _amount = address(this).balance;
+        (bool success,) = admin.call{value: _amount}("");
         require(success, "GPGRewardWallet: execution failed");
+        return _amount;
     }
 
     /// @notice Withdraws all funds from the wallet to a specified address
