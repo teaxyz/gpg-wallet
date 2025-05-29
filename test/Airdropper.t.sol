@@ -12,7 +12,7 @@ contract AirdropperTest is Test {
     mapping(bytes8 => uint256) keyIdToAmount;
 
     function setUp() public {
-        address impl = address(new GPGRewardWallet());
+        address impl = address(new GPGRewardWallet(msg.sender));
         GPGRewardWalletDeployer deployer = new GPGRewardWalletDeployer(impl);
         airdropper = new Airdropper(deployer);
     }

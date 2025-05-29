@@ -16,7 +16,7 @@ contract GPGRewardWalletTest is Test {
     event FundsTransferred(address wallet, uint256 amount);
 
     function setUp() public {
-        impl = new GPGRewardWallet();
+        impl = new GPGRewardWallet(msg.sender);
         deployer = new GPGRewardWalletDeployer(address(impl));
 
         address mockVerifier = address(new MockGPGVerifier());
@@ -68,20 +68,21 @@ contract GPGRewardWalletTest is Test {
         require(success);
     }
 
-    function testAddSignerAndExecute() public {
-        GPGRewardWallet wallet = GPGRewardWallet(payable(deployer.deploy(KEY_ID)));
-        wallet.addSigner(EOA, 0, 0, "", "");
-        assertEq(wallet.signers(EOA), true);
+    /// @dev this functionality has been removed.
+    // function testAddSignerAndExecute() public {
+    //     GPGRewardWallet wallet = GPGRewardWallet(payable(deployer.deploy(KEY_ID)));
+    //     wallet.addSigner(EOA, 0, 0, "", "");
+    //     assertEq(wallet.signers(EOA), true);
 
-        vm.deal(address(wallet), 100e18);
-        assertEq(address(wallet).balance, 100e18);
+    //     vm.deal(address(wallet), 100e18);
+    //     assertEq(address(wallet).balance, 100e18);
 
-        vm.prank(EOA);
-        wallet.executeBySigner(EOA, 100e18, "");
+    //     vm.prank(EOA);
+    //     wallet.executeBySigner(EOA, 100e18, "");
 
-        assertEq(address(wallet).balance, 0);
-        assertEq(EOA.balance, 100e18);
-    }
+    //     assertEq(address(wallet).balance, 0);
+    //     assertEq(EOA.balance, 100e18);
+    // }
 
     function testWithdrawAll() public {
         GPGRewardWallet wallet = GPGRewardWallet(payable(deployer.deploy(KEY_ID)));
@@ -101,7 +102,7 @@ contract GPGRewardWalletTest is Test {
         vm.deal(address(wallet), 100e18);
         assertEq(address(wallet).balance, 100e18);
 
-        wallet.executeWithSig(EOA, 100e18, "", 0, 0, "", "", true);
+        wallet.executeWithSig(EOA, 100e18, "", 0, 0, "", "");
 
         assertEq(address(wallet).balance, 0);
         assertEq(EOA.balance, 100e18);
@@ -132,9 +133,9 @@ contract GPGRewardWalletTest is Test {
         // ED: 0x5af06adaf66d4711487c062b6d213c163973294ff7b0d532289274c566b57bb4
         // RSA: 0x8d36183ef046bbd47bdaf0974f44afb4a4cfe0ec3b63bb1b06338f1bc0deb097
         // NEW ED: 0x07adbc1ca4be60c519f60e5b035e0ae0d1bdc1e294df85c64735113669e07cce
-        bytes32 structHash = wallet.getAddSignerStructHash(EOA, 0, 0, 0);
+        // bytes32 structHash = wallet.getAddSignerStructHash(EOA, 0, 0, 0);
         // bytes32 structHash = 0xf4c87e03710cd61431a6b93b4ed17dcd431ee8d677d882c2e3993633709fbe2a;
-        console.logBytes32(structHash);
+        // console.logBytes32(structHash);
 
         // echo "{structHash}" | xxd -r -p | gpg -u {key id} --pinentry-mode loopback --detach-sign | xxd -p | tr -d '\n'
         // bytes memory signedED =
