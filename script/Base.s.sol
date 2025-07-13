@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.19;
 
-import { Script } from "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 
 abstract contract BaseScript is Script {
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
@@ -21,7 +21,7 @@ abstract contract BaseScript is Script {
 
     constructor() {
         mnemonic = vm.envOr("MNEMONIC", TEST_MNEMONIC);
-        (deployer,) = deriveRememberKey({ mnemonic: mnemonic, index: 0 });
+        (deployer,) = deriveRememberKey({mnemonic: mnemonic, index: 0});
         ledger = vm.envOr("CALL_WITH_LEDGER", false);
     }
 
