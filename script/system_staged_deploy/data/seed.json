@@ -1,0 +1,6 @@
+{
+  "salt": "0xff000000000000000000000000000000000000ffffffffffaaaaabbbbbbbbbbb",
+  "salt0": "0xfff000000000000000000000000000000000000001ffffffaaaaabbbbbbbbbbb",
+  "teaTreasuryMultisig": "0x2e20f31d47Fe7Aa111dCC67Cb0eC6A411254Ae6e",
+  "initialGovernor": "0x2e20f31d47Fe7Aa111dCC67Cb0eC6A411254Ae6e"
+}

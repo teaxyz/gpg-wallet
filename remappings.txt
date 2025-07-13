@@ -5,3 +5,4 @@ forge-std/=lib/forge-std/src/
 halmos-cheatcodes/=lib/openzeppelin-contracts/lib/halmos-cheatcodes/src/
 @openzeppelin/=lib/openzeppelin-contracts/
 @optimism/=lib/optimism/packages/contracts-bedrock/src/
+@prb/test/=lib/prb-test/src

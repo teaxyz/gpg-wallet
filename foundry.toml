@@ -5,3 +5,9 @@ libs = ["lib"]
 fs_permissions = [{ access = "read", path = "./script/data"}]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+
+[rpc_endpoints]
+
+  localhost = "http://localhost:8545"
+  mainnet = "https://eth-mainnet.g.alchemy.com/v2/${API_KEY_ALCHEMY}"
